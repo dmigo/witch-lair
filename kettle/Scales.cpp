@@ -10,6 +10,7 @@ class Scales {
     void (*_onCheck)(float weight);
     int _dout;
     int _sck;
+    float _weight = 0;
     HX711_ADC* _loadCell;
     long _lastCheck = 0;
 
@@ -44,9 +45,13 @@ class Scales {
     void check() {
       _loadCell->update();
       if (_isItTimeToCheck()) {
-        float weight = _loadCell->getData();
-        _check(weight);
+        _weight = _loadCell->getData();
+        _check(_weight);
       }
+    }
+
+    float getWeight(){
+      return _weight;
     }
 };
 #endif
