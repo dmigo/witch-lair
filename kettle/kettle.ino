@@ -4,8 +4,14 @@
 #include "Sensor.cpp"
 #include "Puzzle.cpp"
 
-#define TARGET_WEIGHT_MIN 570
-#define TARGET_WEIGHT_MAX 595
+#define TARGET_WEIGHT_MIN 160
+#define TARGET_WEIGHT_MAX 190
+
+#define DOUT 3
+#define SCK 2
+
+#define LAST_RELAY_PIN 5
+#define FURNICE_PIN 9
 
 Scales* scales;
 ScorePuzzle* weightPuzzle;
@@ -18,11 +24,11 @@ void setup() {
   Serial.println("Version 1.0.0");
   Serial.println("Starting...");
   
-  scales = new Scales(3, 2);
+  scales = new Scales(DOUT, SCK);
   scales->onCheck(onWeightCheck);
   weightPuzzle = new ScorePuzzle(10);
-  lastLock = new TriggerLock(5, isTheWeightPuzzleSolved);
-  furnice = new Sensor(9, 100);
+  lastLock = new TriggerLock(LAST_RELAY_PIN, isTheWeightPuzzleSolved);
+  furnice = new Sensor(FURNICE_PIN, 100);
   furnice->onDrop(fireIsOn);
   furnicePuzzle = new Puzzle();
   
@@ -32,9 +38,11 @@ void setup() {
 void loop() {
   scales->check();
   lastLock->check();
+  furnice->check();
 }
 
 void fireIsOn(){
+  Serial.println("This girl is on fire!!!");
   furnicePuzzle->solve();
 }
 
@@ -43,7 +51,7 @@ bool isTheWeightPuzzleSolved(){
 }
 
 void onWeightCheck(float weight) {
-  if (isTheWeightPuzzleSolved())
+  if (!furnicePuzzle->isSolved() || isTheWeightPuzzleSolved())
     return;
     
   Serial.print("The weight is: ");
