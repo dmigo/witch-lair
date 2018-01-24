@@ -4,6 +4,9 @@
 #include "Sensor.cpp"
 #include "Ambient.cpp"
 
+#include "SoftwareSerial.h"
+#include <DFMiniMp3.h>
+
 #define SOUND_FILE 1
 #define PLAYER_RX_PIN 10
 #define PLAYER_TX_PIN 11
@@ -13,34 +16,76 @@
 #define FURNICE_DOOR_PIN 6
 #define FIRE_PIN 7
 #define KETTLE_PIN 8
-#define FURS_PIN 12
+
+#define FURS_PIN 9
 
 Puzzle* fursPuzzle;
 Lock* furniceLock;
 Lock* kettleLock;
 SimpleIndicator* fire;
 Sensor* furs;
-Player* player;
 Ambient* fireAmbient;
 
+class Mp3Notify
+{
+  public:
+    static void OnError(uint16_t errorCode)
+    {
+    }
+
+    static void OnPlayFinished(uint16_t globalTrack)
+    {
+    }
+
+    static void OnCardOnline(uint16_t code)
+    {
+    }
+
+    static void OnCardInserted(uint16_t code)
+    {
+    }
+
+    static void OnCardRemoved(uint16_t code)
+    {
+    }
+};
+
+SoftwareSerial serialo(PLAYER_RX_PIN, PLAYER_TX_PIN);
+DFMiniMp3<SoftwareSerial, Mp3Notify> player(serialo);
+bool isBusy() {
+  int busy = digitalRead(PLAYER_BUSY_PIN);
+  return busy == LOW;
+}
+
+void play() {
+  player.playMp3FolderTrack(SOUND_FILE);
+}
+
+
 void setup() {
+  serialo.begin(9600);
+  player.begin();
+  player.setVolume(PLAYER_VOLUME);
+
+  furs = new Sensor(FURS_PIN, 100);
   fursPuzzle = new Puzzle();
   furniceLock = new Lock(FURNICE_DOOR_PIN);
-  player = new Player(PLAYER_RX_PIN, PLAYER_TX_PIN, PLAYER_BUSY_PIN);
-  fireAmbient = new Ambient(player, PLAYER_VOLUME, SOUND_FILE);
-  fire = new SimpleIndicator(FIRE_PIN);
-  furs = new Sensor(FURS_PIN, 100);
-  kettleLock = new Lock(KETTLE_PIN);
+  furniceLock->close();
   
-  furs->onDrop(onFursPlaced);
+  fireAmbient = new Ambient(play, isBusy);
+  fire = new SimpleIndicator(FIRE_PIN);
+  kettleLock = new Lock(KETTLE_PIN);
+
+  furs->onChange(onFursPlaced);
 }
 
 void loop() {
   furs->check();
   fireAmbient->check();
+  player.loop();
 }
 
-void onFursPlaced(int pin){
+void onFursPlaced(int pin) {
   fursPuzzle->solve();
   fire->switchOn();
   fireAmbient->switchOn();
