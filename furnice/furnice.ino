@@ -2,7 +2,6 @@
 #include "Lock.cpp"
 #include "SimpleIndicator.cpp"
 #include "Sensor.cpp"
-#include "Ambient.cpp"
 
 #include "SoftwareSerial.h"
 #include <DFMiniMp3.h>
@@ -10,7 +9,6 @@
 #define SOUND_FILE 1
 #define PLAYER_RX_PIN 10
 #define PLAYER_TX_PIN 11
-#define PLAYER_BUSY_PIN 4
 #define PLAYER_VOLUME 20
 
 #define FURNICE_DOOR_PIN 6
@@ -24,7 +22,6 @@ Lock* furniceLock;
 Lock* kettleLock;
 SimpleIndicator* fire;
 Sensor* furs;
-Ambient* fireAmbient;
 
 class Mp3Notify
 {
@@ -52,10 +49,6 @@ class Mp3Notify
 
 SoftwareSerial serialo(PLAYER_RX_PIN, PLAYER_TX_PIN);
 DFMiniMp3<SoftwareSerial, Mp3Notify> player(serialo);
-bool isBusy() {
-  int busy = digitalRead(PLAYER_BUSY_PIN);
-  return busy == LOW;
-}
 
 void play() {
   player.playMp3FolderTrack(SOUND_FILE);
@@ -72,23 +65,20 @@ void setup() {
   furniceLock = new Lock(FURNICE_DOOR_PIN);
   furniceLock->close();
   
-  fireAmbient = new Ambient(play, isBusy);
   fire = new SimpleIndicator(FIRE_PIN);
   kettleLock = new Lock(KETTLE_PIN);
-
   furs->onChange(onFursPlaced);
 }
 
 void loop() {
   furs->check();
-  fireAmbient->check();
   player.loop();
 }
 
 void onFursPlaced(int pin) {
   fursPuzzle->solve();
   fire->switchOn();
-  fireAmbient->switchOn();
+  play();
   furniceLock->open();
   kettleLock->open();
 }
