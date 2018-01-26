@@ -1,4 +1,3 @@
-#include "Scales.cpp"
 #include "ScorePuzzle.cpp"
 #include "TriggerLock.cpp"
 #include "Sensor.cpp"
@@ -7,18 +6,22 @@
 
 #define TARGET_WEIGHT_MIN_ADDRESS 0
 #define TARGET_WEIGHT_MAX_ADDRESS 2
-#define TARGET_WEIGHT_DISPERSION 10 // разброс веса в процентах
+#define TARGET_WEIGHT_DISPERSION 5// разброс веса в процентах
 
 #define DOUT 3
 #define SCK 2
 
-#define LAST_RELAY_PIN 5
+#define LAST_RELAY_PIN 4
 #define FURNICE_PIN 9
 
 #define SET_WEIGHT_PIN 8
 
+#include <HX711_ADC.h>
 
-Scales* scales;
+//HX711 constructor (dout pin, sck pin)
+HX711_ADC LoadCell(DOUT, SCK);
+long t;
+
 ScorePuzzle* weightPuzzle;
 Puzzle* furnicePuzzle;
 TriggerLock* lastLock;
@@ -30,14 +33,18 @@ Mnemonic maxWeightStorage(TARGET_WEIGHT_MAX_ADDRESS);
 
 int minWeight = 0;
 int maxWeight = 0;
+float weight;
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Version 1.0.0");
   Serial.println("Starting...");
 
-  scales = new Scales(DOUT, SCK);
-  scales->onCheck(onWeightCheck);
+  LoadCell.begin();
+  long stabilisingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilising time
+  LoadCell.start(stabilisingtime);
+  LoadCell.setCalFactor(696.0); // user set calibration factor (float)
+
   weightPuzzle = new ScorePuzzle(10);
   lastLock = new TriggerLock(LAST_RELAY_PIN, isTheWeightPuzzleSolved);
   furnice = new Sensor(FURNICE_PIN, 100);
@@ -54,10 +61,19 @@ void setup() {
 }
 
 void loop() {
-  scales->check();
+  updateWeight();
   lastLock->check();
   furnice->check();
   resetWeight->check();
+}
+
+void updateWeight() {
+  LoadCell.update();
+  if (millis() > t + 250) {
+    weight = LoadCell.getData();
+    t = millis();
+    checkWeight();
+  }
 }
 
 void fireIsOn() {
@@ -69,7 +85,7 @@ bool isTheWeightPuzzleSolved() {
   return weightPuzzle->isSolved();
 }
 
-void onWeightCheck(float weight) {
+void checkWeight() {
   if (!furnicePuzzle->isSolved() || isTheWeightPuzzleSolved())
     return;
 
@@ -83,7 +99,6 @@ void onWeightCheck(float weight) {
 }
 
 void setTargetWeight() {
-  float weight = scales->getWeight();
   Serial.print("The current weight is: ");
   Serial.println(weight);
 
