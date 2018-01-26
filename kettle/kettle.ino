@@ -7,6 +7,8 @@
 #define TARGET_WEIGHT_MIN_ADDRESS 0
 #define TARGET_WEIGHT_MAX_ADDRESS 2
 #define TARGET_WEIGHT_DISPERSION 5// разброс веса в процентах
+#define STABILISING_TIME 2000 // время на стабилизацию весов (чем больше - тем точнее тарирование)
+const float CALIBRATION_FACTOR = 696.0; // калибровочный фактор
 
 #define DOUT 3
 #define SCK 2
@@ -41,9 +43,8 @@ void setup() {
   Serial.println("Starting...");
 
   LoadCell.begin();
-  long stabilisingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilising time
-  LoadCell.start(stabilisingtime);
-  LoadCell.setCalFactor(696.0); // user set calibration factor (float)
+  LoadCell.start(STABILISING_TIME);
+  LoadCell.setCalFactor(CALIBRATION_FACTOR);
 
   weightPuzzle = new ScorePuzzle(10);
   lastLock = new TriggerLock(LAST_RELAY_PIN, isTheWeightPuzzleSolved);
