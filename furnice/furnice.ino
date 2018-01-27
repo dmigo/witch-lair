@@ -16,6 +16,7 @@
 #define KETTLE_PIN 8
 
 #define FURS_PIN 9
+#define FURS_DELAY 1500 // задержка перед срабатыванием мехов
 
 Puzzle* fursPuzzle;
 Lock* furniceLock;
@@ -67,7 +68,7 @@ void setup() {
   
   fire = new SimpleIndicator(FIRE_PIN);
   kettleLock = new Lock(KETTLE_PIN);
-  furs->onChange(onFursPlaced);
+  furs->onDropDelay(FURS_DELAY, onFursPlaced);
 }
 
 void loop() {

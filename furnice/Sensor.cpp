@@ -11,33 +11,18 @@ class Sensor {
     int _pin;
 
     void (*_onDrop)(int);
-    void (*_onRise)(int);
-    void (*_onChange)(int);
+    int _delay;
 
     void _act() {
-      if (_state == LOW) {
+      if (_state == LOW
+          && _stateTimestamp >= _delay) {
         _drop();
-      } else {
-          _rise();
       }
-      _change();
     }
 
     void _drop() {
       if (_onDrop != 0L) {
         _onDrop(_pin);
-      }
-    }
-
-    void _rise() {
-      if (_onRise != 0L) {
-        _onRise(_pin);
-      }
-    }
-
-    void _change() {
-      if (_onChange != 0L) {
-        _onChange(_pin);
       }
     }
 
@@ -59,10 +44,8 @@ class Sensor {
       _state = HIGH;
       _stateTimestamp = 0;
       _debounceTime = debounceTime;
-      
+
       _onDrop = 0L;
-      _onRise = 0L;
-      _onChange = 0L;
 
       pinMode(pin, INPUT_PULLUP);
     }
@@ -75,18 +58,9 @@ class Sensor {
       }
     }
 
-    void onDrop(void (*callback)(int)) {
+    void onDropDelay(int delay, void (*callback)(int)) {
       _onDrop = callback;
-    }
-    void onRise(void (*callback)(int)) {
-      _onRise = callback;
-    }
-    void onChange(void (*callback)(int)) {
-      _onChange = callback;
-    }
-
-    bool isActive(){
-      return _state == LOW;
+      _delay = delay;
     }
 };
 #endif
