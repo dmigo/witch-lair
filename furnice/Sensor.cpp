@@ -14,8 +14,7 @@ class Sensor {
     int _delay;
 
     void _act() {
-      if (_state == LOW
-          && _stateTimestamp >= _delay) {
+      if (_state == LOW) {
         _drop();
       }
     }
@@ -54,8 +53,9 @@ class Sensor {
       if (_stateChanged()
           && _debounced()) {
         _updateState();
-        _act();
       }
+      if(_stateTimestamp >= _delay)
+        _act();
     }
 
     void onDropDelay(int delay, void (*callback)(int)) {
