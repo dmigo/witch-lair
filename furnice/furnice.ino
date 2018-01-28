@@ -1,7 +1,7 @@
 #include "Puzzle.cpp"
 #include "Lock.cpp"
 #include "SimpleIndicator.cpp"
-#include "Sensor.cpp"
+#include "ThresholdSensor.cpp"
 
 #include "SoftwareSerial.h"
 #include <DFMiniMp3.h>
@@ -22,7 +22,7 @@ Puzzle* fursPuzzle;
 Lock* furniceLock;
 Lock* kettleLock;
 SimpleIndicator* fire;
-Sensor* furs;
+ThresholdSensor* furs;
 
 class Mp3Notify
 {
@@ -48,8 +48,8 @@ class Mp3Notify
     }
 };
 
-SoftwareSerial serialo(PLAYER_RX_PIN, PLAYER_TX_PIN);
-DFMiniMp3<SoftwareSerial, Mp3Notify> player(serialo);
+SoftwareSerial serial(PLAYER_RX_PIN, PLAYER_TX_PIN);
+DFMiniMp3<SoftwareSerial, Mp3Notify> player(serial);
 
 void play() {
   player.playMp3FolderTrack(SOUND_FILE);
@@ -57,18 +57,18 @@ void play() {
 
 
 void setup() {
-  serialo.begin(9600);
+  serial.begin(9600);
   player.begin();
   player.setVolume(PLAYER_VOLUME);
 
-  furs = new Sensor(FURS_PIN, 100);
   fursPuzzle = new Puzzle();
   furniceLock = new Lock(FURNICE_DOOR_PIN);
   furniceLock->close();
   
   fire = new SimpleIndicator(FIRE_PIN);
   kettleLock = new Lock(KETTLE_PIN);
-  furs->onDropDelay(FURS_DELAY, onFursPlaced);
+  furs = new ThresholdSensor(FURS_PIN, FURS_DELAY);
+  furs->onDrop(onFursPlaced);
 }
 
 void loop() {
