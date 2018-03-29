@@ -3,13 +3,16 @@
 //A- - белый
 //A+ - зеленый
 
-#define TARGET_WEIGHT_DISPERSION 10// разброс веса
+#define TARGET_WEIGHT_DISPERSION 10// разброс веса в процентах
+#define TARGET_WEIGHT_MIN_ADDRESS 0
+#define TARGET_WEIGHT_MAX_ADDRESS 2
+
+#include "Mnemonic.cpp"
 
 #include <HX711.h>
 HX711 scale(3, 2);    // parameter "gain" is ommited; the default value 128 is used by the library
 enum State {SAVE, WORK_1, WORK_2, FINAL, CLOSED, ALL, ORDER1, ORDER2, ORDER3, ORDER_OPEN};
 State state;
-#include <EEPROM.h>
 //Электромагнитный замок
 #define LOCK 4
 //Пин мехов
@@ -20,10 +23,6 @@ State state;
 //Вес на весах
 float w;
 float old_w = 444;
-//Сохраненный вес
-int lev;
-//Погрешность
-int calibr = TARGET_WEIGHT_DISPERSION;
 int val;
 int minimum;
 int maximum;
@@ -31,14 +30,17 @@ unsigned long previousMillis = 0;
 unsigned long saveMillis = 0;
 unsigned long closeMillis = 0;
 const long interval = 3000;
+
+Mnemonic minWeightStorage(TARGET_WEIGHT_MIN_ADDRESS);
+Mnemonic maxWeightStorage(TARGET_WEIGHT_MAX_ADDRESS);
+
 void setup() {
   Serial.begin(9600);
   Serial.println("Version 1.0.0");
   Serial.println("Starting...");
 
-  lev = (EEPROM.read(0) * 1000) + (EEPROM.read(1) * 100) + (EEPROM.read(2) * 10) + EEPROM.read(3);
-  minimum = lev - calibr;
-  maximum = lev + calibr;
+  minimum = minWeightStorage.recall();
+  maximum = maxWeightStorage.recall();
   pinMode(LOCK, OUTPUT);
   pinMode(SAVE_BTN_PIN, INPUT_PULLUP);
   pinMode(FURNICE_PIN, INPUT_PULLUP);
@@ -75,19 +77,12 @@ void loop() {
   switch (state)
   {
     case SAVE:
-      int new_w, r1, r2, r3, r4;
-      new_w = w;
-      r1 = new_w / 1000;
-      r2 = (new_w % 1000) / 100;
-      r3 = (new_w % 100) / 10;
-      r4 = new_w % 10;
-      EEPROM.write(0, r1);
-      EEPROM.write(1, r2);
-      EEPROM.write(2, r3);
-      EEPROM.write(3, r4);
-      lev = (r1 * 1000) + (r2 * 100) + (r3 * 10) + r4;
-      minimum = lev - calibr;
-      maximum = lev + calibr;
+      minimum = w - (w * TARGET_WEIGHT_DISPERSION / 100);
+      maximum = w + (w * TARGET_WEIGHT_DISPERSION / 100);
+    
+      minWeightStorage.memorize(minimum);
+      maxWeightStorage.memorize(maximum);
+      
       reportTargetWeight();
       saveMillis = currentMillis;
       state = WORK_1;
