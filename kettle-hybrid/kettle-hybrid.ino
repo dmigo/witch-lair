@@ -3,14 +3,14 @@
 //A- - белый
 //A+ - зеленый
 
-#define TARGET_WEIGHT_DISPERSION 10// разброс веса в процентах
+  #define TARGET_WEIGHT_DISPERSION 7// разброс веса в процентах
 #define TARGET_WEIGHT_MIN_ADDRESS 0
 #define TARGET_WEIGHT_MAX_ADDRESS 2
 
 #include "Mnemonic.cpp"
 
 #include <HX711.h>
-HX711 scale(3, 2);    // parameter "gain" is ommited; the default value 128 is used by the library
+HX711 scale(A4, A5);    // parameter "gain" is ommited; the default value 128 is used by the library
 enum State {SAVE, WORK_1, WORK_2, FINAL, CLOSED, ALL, ORDER1, ORDER2, ORDER3, ORDER_OPEN};
 State state;
 //Электромагнитный замок
@@ -29,7 +29,7 @@ int maximum;
 unsigned long previousMillis = 0;
 unsigned long saveMillis = 0;
 unsigned long closeMillis = 0;
-const long interval = 3000;
+const long interval = 6000;
 
 Mnemonic minWeightStorage(TARGET_WEIGHT_MIN_ADDRESS);
 Mnemonic maxWeightStorage(TARGET_WEIGHT_MAX_ADDRESS);
@@ -45,13 +45,13 @@ void setup() {
   pinMode(SAVE_BTN_PIN, INPUT_PULLUP);
   pinMode(FURNICE_PIN, INPUT_PULLUP);
   scale.read();
-  scale.read_average(20);
+  scale.read_average(40);
   scale.get_value(5);
   scale.get_units(5);
-  scale.set_scale(2280.f);
+  scale.set_scale(280.f);
   scale.tare();
   scale.read();
-  scale.read_average(20);
+  scale.read_average(40);
   scale.get_value(5);
   scale.get_units(5);
   state = WORK_1;
@@ -62,7 +62,7 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
-  if (digitalRead(SAVE_BTN_PIN) == HIGH)
+  if (digitalRead(SAVE_BTN_PIN) == LOW)
   {
     if (currentMillis - saveMillis >= 1000)
     {
